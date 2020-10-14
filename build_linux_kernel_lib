@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMG=${IMG:-"mpsocks.img"}
+IMG=${IMG:-"linux_kernel.img"}
 DIR="mount_${IMG}"
 
 SUBNET16=${SUBNET16:-"10.66"}
@@ -8,7 +8,7 @@ SUBNETSTART=${SUBNETSTART:-"6"}
 
 TABLESTART=665
 
-TAP_PREFIX=${TAP_PREFIX:-"mptcp"}
+TAP_PREFIX=${TAP_PREFIX:-"blk"}
 
 SOCK_PORT=${SOCK_PORT:-6666}
 
@@ -84,30 +84,10 @@ EOF"
 }
 
 build_kernel() {
-	git clone https://github.com/multipath-tcp/mptcp.git
-	cd mptcp
+	git clone https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+	cd linux
 	make O=build-kvm x86_64_defconfig
 	make O=build-kvm kvmconfig
-
-	scripts/config --file build-kvm/.config --enable MPTCP
-	scripts/config --file build-kvm/.config --enable MPTCP_PM_ADVANCED
-	scripts/config --file build-kvm/.config --enable MPTCP_FULLMESH
-	scripts/config --file build-kvm/.config --enable MPTCP_NDIFFPORTS
-	scripts/config --file build-kvm/.config --enable MPTCP_BINDER
-	scripts/config --file build-kvm/.config --enable MPTCP_NETLINK
-	scripts/config --file build-kvm/.config --enable DEFAULT_FULLMESH
-	scripts/config --file build-kvm/.config --set-str DEFAULT_MPTCP_PM "fullmesh"
-	scripts/config --file build-kvm/.config --enable MPTCP_SCHED_ADVANCED
-	scripts/config --file build-kvm/.config --enable MPTCP_BLEST
-	scripts/config --file build-kvm/.config --enable MPTCP_ROUNDROBIN
-	scripts/config --file build-kvm/.config --enable MPTCP_REDUNDANT
-	scripts/config --file build-kvm/.config --enable DEFAULT_SCHEDULER
-	scripts/config --file build-kvm/.config --set-str DEFAULT_MPTCP_SCHED "default"
-
-	scripts/config --file build-kvm/.config --disable RETPOLINE
-
-	scripts/config --file build-kvm/.config --enable NETFILTER_ADVANCED
-	scripts/config --file build-kvm/.config --module IP_NF_TARGET_REDIRECT
 
 	make O=build-kvm olddefconfig
 	make O=build-kvm -j 8
@@ -117,7 +97,7 @@ build_kernel() {
 }
 
 build_kernel_modules() {
-	cd mptcp
+	cd linux
 	make O=build-kvm -j 8 modules
 	make O=build-kvm INSTALL_MOD_PATH=$PWD/build-kvm/mymodules/ -j 8 modules_install
 	cd -
@@ -353,7 +333,7 @@ boot_vm() {
 		display="-nographic"
 	fi
 
-	qemu-system-x86_64 -m 512 -kernel ./mptcp/build-kvm/arch/x86/boot/bzImage -hda $IMG -append "root=/dev/sda rw console=ttyS0" --enable-kvm $display -device e1000,netdev=mgmt -netdev user,id=mgmt,hostfwd=tcp:127.0.0.1:6222-:22 $(qemu_vm_netdev $n) \
+	qemu-system-x86_64 -m 512 -kernel ./linux/build-kvm/arch/x86/boot/bzImage -hda $IMG -append "root=/dev/sda rw console=ttyS0" --enable-kvm $display -device e1000,netdev=mgmt -netdev user,id=mgmt,hostfwd=tcp:127.0.0.1:6222-:22 $(qemu_vm_netdev $n) \
 		-fsdev local,security_model=mapped-xattr,id=fsdev0,path=$PWD/mptcp/build-kvm/mymodules/lib/modules,readonly -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=modules
 }
 
