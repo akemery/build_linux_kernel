@@ -27,11 +27,13 @@ build_kernel
 # install redsock server (https://darkk.net.ru/redsocks/)
 # boot vm and dl/compile dante/redsocks inside the vm then shut it down (optional)
 install_vm_extra
+```
 
+### Boot VM
+```
 # start the vm
 # if you are using ubuntu. And Enjoy
 sudo su
 source build_linux_kernel_lib
 boot_vm
 ```
-
