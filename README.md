@@ -10,6 +10,13 @@ Easily build linux kernel.
 * Configure networking for MPTCP (guest + host) to use physical interfaces from the guest
 
 
+## Prerequies on Ubuntu 18.04 or 20.04
+
+```
+sudo apt install flex bison libssl-dev libelf-dev
+
+```
+
 ## Quick start:
 
 ### Build vm (First time only)
